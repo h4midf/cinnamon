@@ -316,6 +316,7 @@ enum {
   EM_AMDGPU = 224,        // AMD GPU architecture
   EM_RISCV = 243,         // RISC-V
   EM_LANAI = 244,         // Lanai 32-bit processor
+  EM_DPU = 245,           // DPU architecture
   EM_BPF = 247,           // Linux kernel bpf virtual machine
   EM_VE = 251,            // NEC SX-Aurora VE
   EM_CSKY = 252,          // C-SKY 32-bit processor
@@ -698,6 +699,7 @@ enum {
 #include "ELFRelocs/Sparc.def"
 };
 
+
 // AMDGPU specific e_flags.
 enum : unsigned {
   // Processor selection mask for EF_AMDGPU_MACH_* values.
@@ -949,6 +951,28 @@ enum : unsigned {
 enum {
 #include "ELFRelocs/Xtensa.def"
 };
+
+// UPMEM
+// ELF Relocation types for DPU
+enum {
+#include "ELFRelocs/DPU.def"
+};
+
+// DPU Specific e_flags
+enum : unsigned {
+  EF_DPU_EABI_SET = 0x00800000U,
+  EF_DPU_EABIMASK = 0xFF000000U,
+};
+
+#define EF_EABI_DPU_SET(e_flags, eabi)                                         \
+  ((((e_flags) | llvm::ELF::EF_DPU_EABI_SET) &                                 \
+    (~llvm::ELF::EF_DPU_EABIMASK)) |                                           \
+   (((eabi) << __builtin_ctz(llvm::ELF::EF_DPU_EABIMASK)) &                    \
+    llvm::ELF::EF_DPU_EABIMASK))
+#define EF_EABI_DPU_GET(e_flags)                                               \
+  (((e_flags)&llvm::ELF::EF_DPU_EABIMASK) >>                                   \
+   __builtin_ctz(llvm::ELF::EF_DPU_EABIMASK))
+
 
 #undef ELF_RELOC
 
