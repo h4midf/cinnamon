@@ -9,6 +9,7 @@ add_subdirectory(Async)
 add_subdirectory(Bufferization)
 add_subdirectory(Complex)
 add_subdirectory(ControlFlow)
+add_subdirectory(DPU)
 add_subdirectory(DLTI)
 add_subdirectory(EmitC)
 add_subdirectory(Func)
@@ -38,6 +39,7 @@ add_subdirectory(UB)
 add_subdirectory(Utils)
 add_subdirectory(Vector)
 add_subdirectory(X86Vector)
+add_subdirectory(UPMEM)
 
 set(LLVM_OPTIONAL_SOURCES
   Traits.cpp

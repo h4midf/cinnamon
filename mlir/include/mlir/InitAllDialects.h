@@ -32,6 +32,7 @@
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/ControlFlow/Transforms/BufferDeallocationOpInterfaceImpl.h"
 #include "mlir/Dialect/ControlFlow/Transforms/BufferizableOpInterfaceImpl.h"
+#include "mlir/Dialect/DPU/DPUDialect.h"
 #include "mlir/Dialect/DLTI/DLTI.h"
 #include "mlir/Dialect/EmitC/IR/EmitC.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -88,6 +89,7 @@
 #include "mlir/Interfaces/CastInterfaces.h"
 #include "mlir/Target/LLVM/NVVM/Target.h"
 #include "mlir/Target/LLVM/ROCDL/Target.h"
+#include "mlir/Dialect/UPMEM/IR/UPMEMDialect.h"
 
 namespace mlir {
 
@@ -107,6 +109,7 @@ inline void registerAllDialects(DialectRegistry &registry) {
                   cf::ControlFlowDialect,
                   complex::ComplexDialect,
                   DLTIDialect,
+                  dpu::DPUDialect,
                   emitc::EmitCDialect,
                   func::FuncDialect,
                   gpu::GPUDialect,
@@ -133,6 +136,7 @@ inline void registerAllDialects(DialectRegistry &registry) {
                   transform::TransformDialect,
                   ub::UBDialect,
                   vector::VectorDialect,
+                  upmem::UPMEMDialect,
                   x86vector::X86VectorDialect>();
   // clang-format on
 
