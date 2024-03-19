@@ -8,6 +8,8 @@
 
 #include "mlir/Conversion/DPUToLLVM/DPUToLLVM.h"
 #include "OpToFuncCallLowering.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 
 #include "mlir/Conversion/ConvertToLLVM/ToLLVMInterface.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
@@ -25,7 +27,9 @@ namespace mlir {
 
 using namespace mlir;
 
-
+static constexpr StringRef dpu_triple = "dpu-upmem-dpurte";
+static constexpr StringRef dpu_datalayout = "e-m:e-p:32:32-i1:8:32-i8:8:32-i16:16:32-i32:32:32-i64:64:64-n32";
+static constexpr StringRef dso_local = "dso_local";
 
 //===----------------------------------------------------------------------===//
 // Op Lowering Patterns
@@ -76,6 +80,19 @@ struct DPUToLLVMConversionPass
   using Base::Base;
 
   void runOnOperation() override {
+    ModuleOp module = getOperation();
+    // MLIRContext *ctx = m.getContext();
+
+    module->setAttr(LLVM::LLVMDialect::getTargetTripleAttrName(),
+            StringAttr::get(module.getContext(), dpu_triple));
+    module->setAttr(LLVM::LLVMDialect::getDataLayoutAttrName(),
+            StringAttr::get(module.getContext(), dpu_datalayout));
+
+    for (auto func : module.getOps<func::FuncOp>()) {
+      func->setAttr(dso_local,
+                    UnitAttr::get(&getContext()));
+    }
+
     LLVMConversionTarget target(getContext());
     RewritePatternSet patterns(&getContext());
 

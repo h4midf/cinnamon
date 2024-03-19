@@ -12,6 +12,7 @@ add_mlir_conversion_library(MLIRDPUToLLVM
 
   LINK_LIBS PUBLIC
   MLIRDPUDialect
+  MLIRFuncDialect
   MLIRLLVMCommonConversion
   MLIRLLVMDialect
   )

@@ -1275,12 +1275,12 @@ def ConvertVectorToSPIRV : Pass<"convert-vector-to-spirv"> {
 // DPUToLLVM
 //===----------------------------------------------------------------------===//
 
-def DPUToLLVMConversionPass : Pass<"convert-dpu-to-llvm"> {
+def DPUToLLVMConversionPass : Pass<"convert-dpu-to-llvm", "ModuleOp"> {
   let summary = "Convert DPU dialect to LLVM dialect";
   let description = [{
     This pass converts supported DPU ops to LLVM dialect instructions.
   }];
-  let dependentDialects = ["LLVM::LLVMDialect"];
+  let dependentDialects = ["LLVM::LLVMDialect", "func::FuncDialect"];
 }
 
 
