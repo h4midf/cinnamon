@@ -6,9 +6,18 @@ add_mlir_dialect_library(MLIRDPUDialect
 
   DEPENDS
   MLIRDPUIncGen
+  MLIRDPUEnumsIncGen
+  MLIRDPUAttributesIncGen
+  MLIRDPUTypesIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR
-  MLIRLLVMDialect
+  MLIRControlFlowInterfaces
+  MLIRDialect
+  MLIRDialectUtils
+  MLIRInferTypeOpInterface
+  MLIRIR
   MLIRSideEffectInterfaces
+  MLIRValueBoundsOpInterface
+  MLIRViewLikeInterface
   )

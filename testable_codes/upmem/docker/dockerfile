@@ -1,0 +1,14 @@
+FROM ubuntu:22.04
+
+VOLUME        ["/var/volume1", "/var/volume2"]
+
+RUN apt update 
+
+RUN rm /run/reboot-required*
+
+RUN cd /root/
+RUN wget http://sdk-releases.upmem.com/2023.2.0/ubuntu_20.04/upmem-2023.2.0-Linux-x86_64.tar.gz
+RUN tar -xf upmem-2023.2.0-Linux-x86_64.tar.gz
+
+
+

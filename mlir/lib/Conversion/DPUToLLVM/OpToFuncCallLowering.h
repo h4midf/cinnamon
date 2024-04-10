@@ -9,42 +9,39 @@
 #define MLIR_CONVERSION_DPUOPTOFUNCCALLLOWERING_H_
 
 #include "mlir/Conversion/LLVMCommon/Pattern.h"
-#include "mlir/Dialect/DPU/DPUDialect.h"
+#include "mlir/Dialect/DPU/IR/DPUDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/Builders.h"
 
 namespace mlir {
 
-/// Rewriting that replace SourceOp with a CallOp 
-/// depending on the element type that Op operates upon. The function
-/// declaration is added in case it was not added before.
-///
+// Rewriting that replace SourceOp with a CallOp 
+// depending on the element type that Op operates upon. The function
+// declaration is added in case it was not added before.
+// 
 template <typename SourceOp>
 struct OpToFuncCallLowering : public ConvertOpToLLVMPattern<SourceOp> {
 public:
   explicit OpToFuncCallLowering(LLVMTypeConverter &lowering, StringRef llvmFuncName)
       : ConvertOpToLLVMPattern<SourceOp>(lowering), llvmFuncName(llvmFuncName) {}
-
+  
   LogicalResult
   matchAndRewrite(SourceOp op, typename SourceOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     using LLVM::LLVMFuncOp;
 
-    static_assert(
-        std::is_base_of<OpTrait::OneResult<SourceOp>, SourceOp>::value,
-        "expected single result op");
-
-    // static_assert(std::is_base_of<OpTrait::SameOperandsAndResultType<SourceOp>,
-    //                               SourceOp>::value,
-    //               "expected op with same operand and result types");
-
     SmallVector<Value, 1> castedOperands;
+    Type resultType;
     for (Value operand : adaptor.getOperands())
         castedOperands.push_back(maybeCast(operand, rewriter));
-    
-    Type resultType = op.getResult().getType();
-
+    if (isa<dpu::MeOp>(op)){
+      resultType = IntegerType::get(rewriter.getContext(), 32);
+    } 
+    else if (isa<dpu::MemResetOp>(op)){
+      resultType = LLVM::LLVMPointerType::get(IntegerType::get((rewriter.getContext()), 8));
+    } 
     Type funcType = getFunctionType(resultType, castedOperands);
+
     StringRef funcName = llvmFuncName;
     if (funcName.empty())
       return failure();
@@ -52,9 +49,11 @@ public:
     LLVMFuncOp funcOp = appendOrGetFuncOp(funcName, funcType, op);
     auto callOp =
         rewriter.create<LLVM::CallOp>(op->getLoc(), funcOp, castedOperands);
-
-    rewriter.replaceOp(op, {callOp.getResult()});
-    // rewriter.eraseOp(op);
+    if (op->getNumResults() == 0){
+      rewriter.eraseOp(op);
+    } else {
+      rewriter.replaceOp(op, {callOp.getResult()});
+    }
     return success();
   }
 

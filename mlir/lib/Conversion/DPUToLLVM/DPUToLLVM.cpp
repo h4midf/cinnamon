@@ -14,7 +14,7 @@
 #include "mlir/Conversion/ConvertToLLVM/ToLLVMInterface.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/VectorPattern.h"
-#include "mlir/Dialect/DPU/DPUDialect.h"
+#include "mlir/Dialect/DPU/IR/DPUDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/Pass/Pass.h"
@@ -36,20 +36,50 @@ static constexpr StringRef dso_local = "dso_local";
 //===----------------------------------------------------------------------===//
 
 /// Directly lower to LLVM op.
-struct MeOpLowering : public ConvertOpToLLVMPattern<dpu::MeOp> {
-  using ConvertOpToLLVMPattern::ConvertOpToLLVMPattern;
+struct BarrierInitOpLowering : public ConvertOpToLLVMPattern<dpu::BarrierInitOp> {
+  using ConvertOpToLLVMPattern<dpu::BarrierInitOp>::ConvertOpToLLVMPattern;
+
 
   LogicalResult
-  matchAndRewrite(dpu::MeOp op, OpAdaptor adaptor,
+  matchAndRewrite(dpu::BarrierInitOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override;
 };
 
 LogicalResult
-MeOpLowering::matchAndRewrite(dpu::MeOp op, OpAdaptor adaptor,
+BarrierInitOpLowering::matchAndRewrite(dpu::BarrierInitOp op, OpAdaptor adaptor,
                                     ConversionPatternRewriter &rewriter) const {
-  return LLVM::detail::oneToOneRewrite(op, LLVM::ConstantOp::getOperationName(),
-                                       adaptor.getOperands(), op->getAttrs(),
-                                       *getTypeConverter(), rewriter);
+  auto name = op.getSymName().data();
+  // llvm::dbgs() << name <<"\n";
+  // IntegerAttr barrierId = cast<IntegerAttr>(op.getBarrierId());
+  // int barrier_id =  barrierId.getInt();
+  std::string barrier_name = name;
+  std::string atomic_name = "__atomic_bit_barrier_" + barrier_name;
+
+  auto ctx = rewriter.getContext();
+
+  Type i8Type = IntegerType::get(rewriter.getContext(), 8);
+  Type barrierStructType =
+      LLVM::LLVMStructType::getLiteral(ctx, {i8Type, i8Type, i8Type, i8Type});
+
+  auto int32Type = IntegerType::get(rewriter.getContext(), 32);
+  auto predTy = IntegerType::get(rewriter.getContext(), 1);
+  auto resultTy = LLVM::LLVMStructType::getLiteral(rewriter.getContext(),
+                                                    {predTy, predTy});
+
+
+  SmallVector<NamedAttribute, 4> NamedAttributes;
+  NamedAttributes.push_back(NamedAttribute(rewriter.getStringAttr("section"), rewriter.getI8IntegerAttr(0)));
+  rewriter.create<LLVM::GlobalOp>(
+            op.getLoc(), barrierStructType, false, LLVM::Linkage::External, barrier_name, rewriter.getI8IntegerAttr(0),1, 0, 
+            true, false, SymbolRefAttr(), NamedAttributes);
+
+  Type atomicType = IntegerType::get(ctx, 8);
+  rewriter.create<LLVM::GlobalOp>(
+            op.getLoc(), atomicType, false, LLVM::Linkage::External, atomic_name, rewriter.getI8IntegerAttr(0),1, 0, 
+            true, false, SymbolRefAttr(), NamedAttributes);
+
+  rewriter.eraseOp(op);
+  return success();
 }
 
 template <typename OpTy>
@@ -65,9 +95,9 @@ static void populateOpPatterns(LLVMTypeConverter &converter,
 
 void mlir::dpu::populateDPUToLLVMConversionPatterns(
     LLVMTypeConverter &converter, RewritePatternSet &patterns) {
-
-  populateOpPatterns<dpu::MeOp>(converter, patterns, /*llvm func name*/"me");
-
+  populateOpPatterns<dpu::MeOp>(converter, patterns, /*llvm func name*/"llvm.dpu.tid.i32");
+  populateOpPatterns<dpu::MemResetOp>(converter, patterns, /*llvm func name*/"mem_reset");
+  patterns.add<BarrierInitOpLowering>(converter);
 }
 
 //===----------------------------------------------------------------------===//

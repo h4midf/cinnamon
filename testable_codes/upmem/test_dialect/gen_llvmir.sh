@@ -1,0 +1,1 @@
+mlir-opt me.mlir --convert-dpu-to-llvm --convert-func-to-llvm --convert-scf-to-cf  --convert-cf-to-llvm | mlir-translate --mlir-to-llvmir
